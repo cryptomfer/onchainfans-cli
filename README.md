@@ -108,7 +108,7 @@ Credentials saved to `.onchainfans.json`:
 
 ## Environment Variables
 
-- `ONCHAINFANS_API_URL` - API base URL (default: https://api.onchainfans.fun/api)
+- `ONCHAINFANS_API_URL` - API base URL (default: https://onchainfans.fun/api)
 - `ONCHAINFANS_URL` - Frontend URL (default: https://onchainfans.fun)
 
 ## Full API Documentation

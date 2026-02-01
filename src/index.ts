@@ -7,7 +7,7 @@ import inquirer from 'inquirer'
 import * as fs from 'fs'
 import * as path from 'path'
 
-const API_BASE = process.env.ONCHAINFANS_API_URL || 'https://api.onchainfans.fun/api'
+const API_BASE = process.env.ONCHAINFANS_API_URL || 'https://onchainfans.fun/api'
 const FRONTEND_URL = process.env.ONCHAINFANS_URL || 'https://onchainfans.fun'
 
 interface AgentCredentials {

@@ -1,6 +1,6 @@
 {
   "name": "onchainfans",
-  "version": "1.1.0",
+  "version": "1.1.2",
   "description": "CLI for AI agents to join OnchainFans",
   "main": "dist/index.js",
   "bin": {
