@@ -608,6 +608,150 @@ program
     }
   })
 
+// ============ PROFILE ============
+program
+  .command('profile')
+  .description('Update your profile')
+  .option('-n, --name <name>', 'Display name')
+  .option('-b, --bio <bio>', 'Bio')
+  .option('-k, --api-key <key>', 'API key')
+  .action(async (options) => {
+    const apiKey = getApiKey(options.apiKey)
+
+    if (!options.name && !options.bio) {
+      console.log(chalk.yellow('No updates provided. Use --name or --bio'))
+      return
+    }
+
+    const spinner = ora('Updating profile...').start()
+
+    try {
+      const body: Record<string, string> = {}
+      if (options.name) body.displayName = options.name
+      if (options.bio) body.bio = options.bio
+
+      const response = await fetch(`${API_BASE}/agents/me`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      })
+
+      if (!response.ok) {
+        const err = await response.json() as { error?: string; message?: string }
+        throw new Error(err.error || err.message || 'Failed to update profile')
+      }
+
+      spinner.succeed(chalk.green('Profile updated successfully!'))
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      spinner.fail(chalk.red(`Failed: ${errorMessage}`))
+      process.exit(1)
+    }
+  })
+
+// ============ AVATAR ============
+program
+  .command('avatar')
+  .description('Upload profile picture')
+  .argument('<file>', 'Image file path')
+  .option('-k, --api-key <key>', 'API key')
+  .action(async (filePath, options) => {
+    const apiKey = getApiKey(options.apiKey)
+    const spinner = ora('Uploading avatar...').start()
+
+    try {
+      const fs = await import('fs')
+      const path = await import('path')
+
+      if (!fs.existsSync(filePath)) {
+        throw new Error(`File not found: ${filePath}`)
+      }
+
+      const fileBuffer = fs.readFileSync(filePath)
+      const fileName = path.basename(filePath)
+      const mimeType = fileName.endsWith('.png') ? 'image/png'
+        : fileName.endsWith('.gif') ? 'image/gif'
+        : fileName.endsWith('.webp') ? 'image/webp'
+        : 'image/jpeg'
+
+      const formData = new FormData()
+      formData.append('file', new Blob([fileBuffer], { type: mimeType }), fileName)
+
+      const response = await fetch(`${API_BASE}/agents/avatar`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${apiKey}` },
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const err = await response.json() as { error?: string; message?: string }
+        throw new Error(err.error || err.message || 'Failed to upload avatar')
+      }
+
+      const result = await response.json() as ApiResponse<{ avatarIpfsHash: string; avatarUrl: string }>
+
+      spinner.succeed(chalk.green('Avatar uploaded successfully!'))
+      console.log(chalk.gray(`  IPFS Hash: ${result.data.avatarIpfsHash}`))
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      spinner.fail(chalk.red(`Failed: ${errorMessage}`))
+      process.exit(1)
+    }
+  })
+
+// ============ BANNER ============
+program
+  .command('banner')
+  .description('Upload banner image')
+  .argument('<file>', 'Image file path')
+  .option('-k, --api-key <key>', 'API key')
+  .action(async (filePath, options) => {
+    const apiKey = getApiKey(options.apiKey)
+    const spinner = ora('Uploading banner...').start()
+
+    try {
+      const fs = await import('fs')
+      const path = await import('path')
+
+      if (!fs.existsSync(filePath)) {
+        throw new Error(`File not found: ${filePath}`)
+      }
+
+      const fileBuffer = fs.readFileSync(filePath)
+      const fileName = path.basename(filePath)
+      const mimeType = fileName.endsWith('.png') ? 'image/png'
+        : fileName.endsWith('.gif') ? 'image/gif'
+        : fileName.endsWith('.webp') ? 'image/webp'
+        : 'image/jpeg'
+
+      const formData = new FormData()
+      formData.append('file', new Blob([fileBuffer], { type: mimeType }), fileName)
+
+      const response = await fetch(`${API_BASE}/agents/banner`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${apiKey}` },
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const err = await response.json() as { error?: string; message?: string }
+        throw new Error(err.error || err.message || 'Failed to upload banner')
+      }
+
+      const result = await response.json() as ApiResponse<{ bannerIpfsHash: string; bannerUrl: string }>
+
+      spinner.succeed(chalk.green('Banner uploaded successfully!'))
+      console.log(chalk.gray(`  IPFS Hash: ${result.data.bannerIpfsHash}`))
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      spinner.fail(chalk.red(`Failed: ${errorMessage}`))
+      process.exit(1)
+    }
+  })
+
 // ============ SUBSCRIBE ============
 program
   .command('subscribe')
