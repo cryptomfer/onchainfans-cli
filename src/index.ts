@@ -895,7 +895,7 @@ program
 // ============ POST ============
 program
   .command('post')
-  .description('Post content to OnchainFans')
+  .description('Post content to OnchainFans (image or video required)')
   .option('-k, --api-key <key>', 'API key')
   .option('-t, --text <text>', 'Post text/caption')
   .option('-i, --image <path>', 'Image file to upload')
@@ -907,8 +907,8 @@ program
   .action(async (options) => {
     const apiKey = getApiKey(options.apiKey)
 
-    if (!options.text && !options.image && !options.video) {
-      console.log(chalk.red('Please provide --text, --image, or --video'))
+    if (!options.image && !options.video) {
+      console.log(chalk.red('Please provide --image or --video (media is required for posts)'))
       process.exit(1)
     }
 
@@ -925,69 +925,34 @@ program
       if (options.free) visibility = 'free'
       if (options.premium) visibility = 'premium'
 
-      if (filePath) {
-        // Upload with file
-        spinner.text = 'Uploading media...'
-        const fileBuffer = fs.readFileSync(filePath)
-        const formData = new FormData()
-        formData.append('file', new Blob([fileBuffer]), path.basename(filePath))
-        formData.append('caption', options.text || '')
-        formData.append('visibility', visibility)
-        if (options.premium && options.price) {
-          formData.append('priceUsdc', options.price)
-        }
-        if (options.schedule) {
-          formData.append('scheduledAt', options.schedule)
-        }
-
-        const response = await fetch(`${API_BASE}/content/upload`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${apiKey}` },
-          body: formData,
-        })
-
-        if (!response.ok) {
-          const err = await response.json() as { message?: string }
-          throw new Error(err.message || 'Failed to post')
-        }
-
-        const result = await response.json() as ApiResponse<{ id: string }>
-        spinner.succeed('Post created!')
-        console.log(chalk.green(`  ${FRONTEND_URL}/post/${result.data.id}`))
-      } else {
-        // Text-only post
-        const postData: Record<string, unknown> = {
-          type: 'text',
-          caption: options.text,
-          isFree: visibility === 'free',
-          isSubscriberOnly: visibility === 'subscribers',
-          isPremium: visibility === 'premium',
-        }
-        if (options.premium && options.price) {
-          postData.premiumPriceUsdc = options.price
-        }
-        if (options.schedule) {
-          postData.scheduledAt = options.schedule
-        }
-
-        const response = await fetch(`${API_BASE}/content`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(postData),
-        })
-
-        if (!response.ok) {
-          const err = await response.json() as { message?: string }
-          throw new Error(err.message || 'Failed to post')
-        }
-
-        const result = await response.json() as ApiResponse<{ id: string }>
-        spinner.succeed('Post created!')
-        console.log(chalk.green(`  ${FRONTEND_URL}/post/${result.data.id}`))
+      // Upload with file (required)
+      spinner.text = 'Uploading media...'
+      const fileBuffer = fs.readFileSync(filePath)
+      const formData = new FormData()
+      formData.append('file', new Blob([fileBuffer]), path.basename(filePath))
+      formData.append('caption', options.text || '')
+      formData.append('visibility', visibility)
+      if (options.premium && options.price) {
+        formData.append('priceUsdc', options.price)
       }
+      if (options.schedule) {
+        formData.append('scheduledAt', options.schedule)
+      }
+
+      const response = await fetch(`${API_BASE}/content/upload`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${apiKey}` },
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const err = await response.json() as { message?: string }
+        throw new Error(err.message || 'Failed to post')
+      }
+
+      const result = await response.json() as ApiResponse<{ id: string }>
+      spinner.succeed('Post created!')
+      console.log(chalk.green(`  ${FRONTEND_URL}/post/${result.data.id}`))
       console.log('')
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
