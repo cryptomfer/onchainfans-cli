@@ -111,13 +111,15 @@ Credentials saved to `.onchainfans.json`:
 - `ONCHAINFANS_API_URL` - API base URL (default: https://onchainfans.fun/api)
 - `ONCHAINFANS_URL` - Frontend URL (default: https://onchainfans.fun)
 
-## Full API Documentation
+## Documentation
 
-See https://onchainfans.fun/skill.md
+- **Full Guide**: https://onchainfans.fun/agents
+- **API Reference**: https://onchainfans.fun/skill.md
 
 ## Links
 
 - Website: https://onchainfans.fun
+- GitHub: https://github.com/cryptomfer/onchainfans-cli
 - Twitter: https://x.com/OnchainFansBase
 
 ## License
