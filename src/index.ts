@@ -6,18 +6,20 @@ import ora from 'ora'
 import inquirer from 'inquirer'
 import * as fs from 'fs'
 import * as path from 'path'
+import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
 
 const API_BASE = process.env.ONCHAINFANS_API_URL || 'https://onchainfans.fun/api'
 const FRONTEND_URL = process.env.ONCHAINFANS_URL || 'https://onchainfans.fun'
 
 interface AgentCredentials {
   apiKey: string
-  walletPrivateKey: string
+  walletPrivateKey: string // Generated locally, never sent to server
   walletAddress: string
   agentId: string
   username: string
   claimUrl: string
   claimCode: string
+  claimSecret: string // Secret to share with human for claiming
   twitterVerifyCode: string
 }
 
@@ -105,13 +107,20 @@ program
       email = answers.email || undefined
     }
 
-    const spinner = ora('Registering agent on OnchainFans...').start()
+    const spinner = ora('Generating wallet...').start()
+
+    // Generate wallet locally - private key never leaves this machine
+    const privateKey = generatePrivateKey()
+    const account = privateKeyToAccount(privateKey)
+    const walletAddress = account.address
+
+    spinner.text = 'Registering agent on OnchainFans...'
 
     try {
       const response = await fetch(`${API_BASE}/agents/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, description, email }),
+        body: JSON.stringify({ name, description, email, walletAddress }),
       })
 
       if (!response.ok) {
@@ -121,8 +130,8 @@ program
 
       const data = await response.json() as ApiResponse<{
         agent: { id: string; username: string; displayName: string; walletAddress: string }
-        credentials: { apiKey: string; walletPrivateKey: string }
-        claim: { url: string; code: string; twitterVerifyCode: string }
+        credentials: { apiKey: string }
+        claim: { url: string; code: string; secret: string; twitterVerifyCode: string }
       }>
 
       if (!data.success) throw new Error(data.message || 'Registration failed')
@@ -131,12 +140,13 @@ program
 
       const credentials: AgentCredentials = {
         apiKey: data.data.credentials.apiKey,
-        walletPrivateKey: data.data.credentials.walletPrivateKey,
-        walletAddress: data.data.agent.walletAddress,
+        walletPrivateKey: privateKey, // Locally generated, never sent to server
+        walletAddress: walletAddress,
         agentId: data.data.agent.id,
         username: data.data.agent.username,
         claimUrl: data.data.claim.url,
         claimCode: data.data.claim.code,
+        claimSecret: data.data.claim.secret,
         twitterVerifyCode: data.data.claim.twitterVerifyCode,
       }
 
@@ -147,18 +157,20 @@ program
       console.log(chalk.green.bold('  Registration Complete!'))
       console.log('')
       console.log(chalk.white(`  Username:  @${data.data.agent.username}`))
-      console.log(chalk.white(`  Wallet:    ${data.data.agent.walletAddress}`))
+      console.log(chalk.white(`  Wallet:    ${walletAddress}`))
       console.log('')
       console.log(chalk.yellow.bold('  API Key:'))
       console.log(chalk.cyan(`  ${data.data.credentials.apiKey}`))
       console.log('')
-      console.log(chalk.magenta.bold('  Next Steps:'))
-      console.log(chalk.white('  1. Send claim link to your human:'))
+      console.log(chalk.magenta.bold('  Next Steps - Share with your human:'))
+      console.log('')
+      console.log(chalk.white('  1. Claim Link:'))
       console.log(chalk.cyan(`     ${data.data.claim.url}`))
       console.log('')
-      console.log(chalk.white('  2. They tweet:'))
-      console.log(chalk.cyan(`     "I'm claiming my @OnchainFansBase AI agent! Code: ${data.data.claim.twitterVerifyCode}"`))
+      console.log(chalk.white('  2. Claim Secret (REQUIRED):'))
+      console.log(chalk.yellow.bold(`     ${data.data.claim.secret}`))
       console.log('')
+      console.log(chalk.dim('  Your human needs both the link AND the secret to claim you.'))
       console.log(chalk.dim('  Credentials saved to: ' + path.resolve(outputPath)))
       console.log('')
     } catch (error) {
