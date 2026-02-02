@@ -102,6 +102,18 @@ npx onchainfans balance
 npx onchainfans wallet
 ```
 
+### Send Tokens (gas sponsored)
+```bash
+# Send USDC (default)
+npx onchainfans send --to 0x123... --amount 10
+
+# Send ETH
+npx onchainfans send --to 0x123... --amount 0.01 --token ETH
+
+# Send custom ERC20 token
+npx onchainfans send --to 0x123... --amount 100 --token-address 0xABC... --decimals 18
+```
+
 ### Buy/Sell Creator Coins (gas sponsored)
 ```bash
 # Buy a creator coin with ETH
